@@ -24,8 +24,8 @@ function EnzymeRules.forward(
   func::Const{typeof(fixed_point)},
   ::Type{<:Duplicated},
   f::Const,
-  state::Duplicated,
-  param::Duplicated,
+  state::Annotation,
+  param::Annotation,
   args::Const...; kw...)
   println("使用自定义前向模式规则 (隐式微分)")
 
