@@ -26,29 +26,21 @@ function EnzymeRules.forward(
   f::Const,
   state::Duplicated,
   param::Duplicated,
-  args::Const...;
-  kwargs...
-)
-  get(kwargs, :verbose, false) && println("使用自定义前向模式规则 (隐式微分)")
+  args::Const...; kw...)
+  println("使用自定义前向模式规则 (隐式微分)")
 
-  # 1. 前向传播：计算固定点 state*
-  state_star = fixed_point(f.val, state.val, param.val, map(a -> a.val, args)...; kwargs...)
+  # 1. 前向传播：计算固定点 state*（使用默认参数）
+  state_star = fixed_point(f.val, state.val, param.val, map(a -> a.val, args)...; kw...)
 
   # 确保 state_star 是数组（支持标量）
   state_is_scalar = !(state_star isa AbstractArray)
-  
-  if state_is_scalar
-    state_star_vec = [state_star]
-  else
-    state_star_vec = state_star
-  end
 
+  state_star_vec = state_star
+  state_is_scalar && (state_star_vec = [state_star])
+  
   n = length(state_star_vec)
 
-  # 2. 提取传递给 f 的关键字参数
-  f_kwargs = filter(kw -> kw.first ∉ [:tol, :max_iters, :norm_type, :verbose], pairs(kwargs))
-
-  # 3. 计算雅可比矩阵 J_state = ∂f/∂state|(state*, param)
+  # 2. 计算雅可比矩阵 J_state = ∂f/∂state|(state*, param)
   J_state = zeros(n, n)
 
   ## 先计算1个变量的
@@ -78,7 +70,7 @@ function EnzymeRules.forward(
       result_dval = zeros(n)
       result = autodiff(
         ForwardWithPrimal,
-        (out, s, p, a...) -> (out .= f.val(s, p, a...; f_kwargs...); nothing),
+        (out, s, p, a...) -> (out .= f.val(s, p, a...); nothing),
         Const,
         Duplicated(result_val, result_dval),
         state_dup,
@@ -110,7 +102,7 @@ function EnzymeRules.forward(
     result_dval = zeros(n)
     autodiff(
       Forward,
-      (out, s, p, a...) -> (out .= f.val(s, p, a...; f_kwargs...); nothing),
+      (out, s, p, a...) -> (out .= f.val(s, p, a...); nothing),
       Const,
       Duplicated(result_val, result_dval),
       state_const,

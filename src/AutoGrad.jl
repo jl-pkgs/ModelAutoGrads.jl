@@ -11,6 +11,6 @@ using LinearAlgebra
 
 include("fixed_point.jl")
 include("Forward.jl")
-
+include("Reverse.jl")
 
 end # module AutoGrad
