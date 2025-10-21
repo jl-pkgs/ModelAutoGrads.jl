@@ -26,7 +26,7 @@ function EnzymeRules.forward(
   args_const = map(a -> Const(a.val), args)
 
   # 2. 计算 J_state = ∂f/∂state|(state*, param)
-  J_state = zeros(n, n)
+  J_state = zeros(n, n) ## 向前求导
   for i in 1:n
     dstate = make_zero(state_star)
     dstate[i] = 1.0
