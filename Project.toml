@@ -1,0 +1,12 @@
+name = "AutoGrad"
+uuid = "bb5ee08d-2263-4c56-8f83-dffd1335715f"
+authors = ["Dongdong Kong <kongdd@users.noreply.github.com>"]
+version = "0.1.0"
+
+[deps]
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[compat]
+Enzyme = "0.13.86"
+LinearAlgebra = "1.11.0"

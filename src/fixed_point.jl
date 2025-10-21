@@ -13,11 +13,11 @@ using LinearAlgebra
 固定点求解器的配置选项
 """
 Base.@kwdef struct FixedPointOptions
-    tol::Float64 = 1e-6           # 收敛容差
-    max_iters::Int = 1000         # 最大迭代次数
-    norm_type::Real = 2           # 范数类型 (1, 2, Inf)
-    verbose::Bool = false         # 是否打印迭代信息
-    check_convergence::Bool = true # 是否检查收敛
+  tol::Float64 = 1e-6           # 收敛容差
+  max_iters::Int = 1000         # 最大迭代次数
+  norm_type::Real = 2           # 范数类型 (1, 2, Inf)
+  verbose::Bool = false         # 是否打印迭代信息
+  check_convergence::Bool = true # 是否检查收敛
 end
 
 """
@@ -55,40 +55,43 @@ x_star = fixed_point(f, 0.0, [0.8, 0.2]; offset=0.1, tol=1e-8)
 ```
 """
 function fixed_point(
-    f,
-    state,
-    param,
-    args...;
-    tol::Float64 = 1e-6,
-    max_iters::Int = 1000,
-    norm_type::Real = 2,
-    verbose::Bool = false,
-    kwargs...
+  f,
+  state,
+  param,
+  args...;
+  tol::Float64=1e-6,
+  max_iters::Int=1000,
+  norm_type::Real=2,
+  verbose::Bool=false,
+  kwargs...
 )
-    # 分离固定点求解的配置参数和传递给 f 的关键字参数
-    f_kwargs = filter(kw -> kw.first ∉ [:tol, :max_iters, :norm_type, :verbose], pairs(kwargs))
-    
-    state_prev = copy(state)
-    state_curr = f(state, param, args...; f_kwargs...)
-    
-    for iter in 1:max_iters
-        residual = norm(state_curr - state_prev, norm_type)
-        
-        if verbose
-            println("Iter $iter: residual = $residual")
-        end
-        
-        if residual < tol
-            if verbose
-                println("Converged in $iter iterations")
-            end
-            return state_curr
-        end
-        
-        state_prev = copy(state_curr)
-        state_curr = f(state_curr, param, args...; f_kwargs...)
+  # 分离固定点求解的配置参数和传递给 f 的关键字参数
+  f_kwargs = filter(kw -> kw.first ∉ [:tol, :max_iters, :norm_type, :verbose], pairs(kwargs))
+
+  state_prev = copy(state)
+  state_curr = f(state, param, args...; f_kwargs...)
+
+  for iter in 1:max_iters
+    residual = norm(state_curr - state_prev, norm_type)
+
+    verbose && println("Iter $iter: residual = $residual")
+
+
+    if residual < tol
+      if verbose
+        println("Converged in $iter iterations")
+      end
+      return state_curr
     end
-    
-    @warn "Fixed point did not converge in $max_iters iterations. Final residual: $(norm(state_curr - state_prev, norm_type))"
-    return state_curr
+
+    state_prev = copy(state_curr)
+    state_curr = f(state_curr, param, args...; f_kwargs...)
+  end
+
+  error = norm(state_curr - state_prev, norm_type)
+  @warn "Fixed point did not converge in $max_iters iterations. Final residual: $error"
+  return state_curr
 end
+
+
+export fixed_point, FixedPointOptions
