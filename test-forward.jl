@@ -1,3 +1,6 @@
+using Pkg
+Pkg.activate(".")
+
 using AutoGrad
 using Enzyme
 using Enzyme: autodiff
@@ -14,11 +17,8 @@ function loss(params)
 end
 
 
-"""
-示例 1: 简单的标量固定点
-x* = a * tanh(x*) + b
-"""
-# function example_scalar()
+# 示例 1: 简单的标量固定点
+# x* = a * tanh(x*) + b
 begin
   params = [0.8, 0.2]
   x_init = 0.0
@@ -38,24 +38,4 @@ begin
     # Duplicated,
     params_dup
   )
-end
-
-
-
-
-begin
-  x_tangent = result[1]  # 导数/切向量
-  x_primal = result[2]   # 原始值
-
-  println("固定点 x*: ", x_primal)
-  println("dx*/dparams[1]: ", x_tangent)
-
-  # 反向模式：计算梯度
-  println("\n反向模式测试:")
-
-  params_dup = Duplicated(copy(params), zeros(2))
-  autodiff(Reverse, loss, Active, params_dup)
-
-  println("参数: ", params)
-  println("dL/dparams: ", params_dup.dval)
 end

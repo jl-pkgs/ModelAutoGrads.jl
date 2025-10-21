@@ -1,7 +1,6 @@
 # ============================================================================
 # Enzyme 前向模式自定义规则 (Forward Mode / JVP)
 # ============================================================================
-
 """
 自定义前向模式规则：实现隐式微分
 
@@ -20,7 +19,7 @@
 前向模式 (JVP):
 (I - J_state) · dstate* = J_param · dparam
 """
-function Enzyme.EnzymeRules.forward(
+function EnzymeRules.forward(
   config::FwdConfig,
   func::Const{typeof(fixed_point)},
   ::Type{<:Duplicated},
@@ -30,21 +29,20 @@ function Enzyme.EnzymeRules.forward(
   args::Const...;
   kwargs...
 )
-
-  if get(kwargs, :verbose, false)
-    println("使用自定义前向模式规则 (隐式微分)")
-  end
+  get(kwargs, :verbose, false) && println("使用自定义前向模式规则 (隐式微分)")
 
   # 1. 前向传播：计算固定点 state*
   state_star = fixed_point(f.val, state.val, param.val, map(a -> a.val, args)...; kwargs...)
 
   # 确保 state_star 是数组（支持标量）
   state_is_scalar = !(state_star isa AbstractArray)
+  
   if state_is_scalar
     state_star_vec = [state_star]
   else
     state_star_vec = state_star
   end
+
   n = length(state_star_vec)
 
   # 2. 提取传递给 f 的关键字参数
@@ -52,6 +50,8 @@ function Enzyme.EnzymeRules.forward(
 
   # 3. 计算雅可比矩阵 J_state = ∂f/∂state|(state*, param)
   J_state = zeros(n, n)
+
+  ## 先计算1个变量的
 
   for i in 1:n
     dstate = zeros(n)
@@ -64,19 +64,20 @@ function Enzyme.EnzymeRules.forward(
     # 调用 f 的前向模式 AD
     if state_is_scalar
       result = autodiff(
-        Forward,
+        ForwardWithPrimal,
         f.val,
         Duplicated,
         state_dup,
         param_const,
         args_const...
       )
-      J_state[:, i] = [result.dval]
+      # ForwardWithPrimal 返回 (derivative, primal)
+      J_state[:, i] = [result[1]]
     else
       result_val = similar(state_star_vec)
       result_dval = zeros(n)
       result = autodiff(
-        Forward,
+        ForwardWithPrimal,
         (out, s, p, a...) -> (out .= f.val(s, p, a...; f_kwargs...); nothing),
         Const,
         Duplicated(result_val, result_dval),
@@ -94,14 +95,16 @@ function Enzyme.EnzymeRules.forward(
 
   if state_is_scalar
     result = autodiff(
-      Forward,
+      ForwardWithPrimal,
       f.val,
       Duplicated,
       state_const,
       param,
       args_const...
     )
-    F_param_dot = [result.dval]
+    # ForwardWithPrimal 返回 (derivative, primal)
+    F_param_dot = [result[1]]
+
   else
     result_val = similar(state_star_vec)
     result_dval = zeros(n)

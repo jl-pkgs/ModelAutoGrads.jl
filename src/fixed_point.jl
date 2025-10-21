@@ -8,19 +8,6 @@ using LinearAlgebra
 # ============================================================================
 
 """
-    FixedPointOptions
-
-固定点求解器的配置选项
-"""
-Base.@kwdef struct FixedPointOptions
-  tol::Float64 = 1e-6           # 收敛容差
-  max_iters::Int = 1000         # 最大迭代次数
-  norm_type::Real = 2           # 范数类型 (1, 2, Inf)
-  verbose::Bool = false         # 是否打印迭代信息
-  check_convergence::Bool = true # 是否检查收敛
-end
-
-"""
     fixed_point(f, state, param, args...; kwargs...)
 
 求解固定点方程: state* = f(state*, param, args...; kwargs...)
@@ -73,14 +60,10 @@ function fixed_point(
 
   for iter in 1:max_iters
     residual = norm(state_curr - state_prev, norm_type)
-
-    verbose && println("Iter $iter: residual = $residual")
-
-
+    
+    # verbose && println("Iter $iter: residual = $residual")
     if residual < tol
-      if verbose
-        println("Converged in $iter iterations")
-      end
+      verbose && println("Converged in $iter iterations")
       return state_curr
     end
 
@@ -94,4 +77,4 @@ function fixed_point(
 end
 
 
-export fixed_point, FixedPointOptions
+export fixed_point
