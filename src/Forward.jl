@@ -17,7 +17,7 @@ function EnzymeRules.forward(
   param::Duplicated,
   args::Const...; kw...)
 
-  println("使用自定义前向模式规则 (隐式微分)")
+  printstyled("使用自定义前向模式规则 (隐式微分)\n", color=:blue, bold=true)
 
   # 1. 计算固定点 state*
   state_star = fixed_point(f.val, state.val, param.val,
