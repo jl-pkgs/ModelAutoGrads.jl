@@ -28,12 +28,12 @@ begin
   # 在前向模式中，使用 Duplicated 包装参数和返回值
   # 输入的 dval 字段包含切向量（tangent vector）
   # 输出的 dval 字段将包含结果的导数
-  params_dup = Duplicated(copy(params), [1.0, 0.0])
+  params_dup = Duplicated(params, make_zero(params))
 
   # 使用 ForwardWithPrimal 模式返回原始值和切向量
   result = Enzyme.autodiff(
     ForwardWithPrimal,
-    (p) -> fixed_point_wrapper(f, x_init, p),
+    (p) -> fixed_point_wrapper(f, x_init, p), ## 看的是p -> x_star的影响
     # Duplicated,
     params_dup
   )

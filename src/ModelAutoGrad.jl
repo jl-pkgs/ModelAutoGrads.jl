@@ -2,7 +2,7 @@ module ModelAutoGrad
 
 
 export norm
-
+export reverse, forward
 
 # using Enzyme.EnzymeRules
 using Enzyme
