@@ -55,7 +55,7 @@ function EnzymeRules.forward(
 
     # 调用 f 的前向模式 AD
     if state_is_scalar
-      result = autodiff(
+      result = Enzyme.autodiff(
         ForwardWithPrimal,
         f.val,
         Duplicated,

@@ -1,7 +1,7 @@
-using Pkg
-Pkg.activate(".")
+# using Pkg
+# Pkg.activate(".")
 
-using AutoGrad
+using ModelAutoGrad
 using Enzyme
 using Enzyme: autodiff
 
@@ -9,7 +9,8 @@ using Enzyme: autodiff
 f(x, params) = params[1] * tanh(x) + params[2]
 
 # 创建包装函数，不带 verbose 参数以避免 kwargs 问题
-fixed_point_wrapper(f, x, p) = fixed_point(f, x, p)
+fixed_point_wrapper(f, x, p) = fixed_point(f, x, p; verbose=true)
+
 
 function loss(params)
   x_star = fixed_point_wrapper(f, x_init, params)

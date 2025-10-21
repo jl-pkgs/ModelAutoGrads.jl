@@ -19,7 +19,7 @@ using LinearAlgebra
 - `args...`: 额外的位置参数（传递给 f）
 - `kwargs...`: 额外的关键字参数，包括：
   - `tol`: 收敛容差（默认 1e-6）
-  - `max_iters`: 最大迭代次数（默认 1000）
+  - `nmax`: 最大迭代次数（默认 1000）
   - `norm_type`: 范数类型（默认 2）
   - `verbose`: 是否打印信息（默认 false）
 
@@ -41,26 +41,17 @@ f(x, params; offset=0.0) = params[1] * tanh(x) + params[2] + offset
 x_star = fixed_point(f, 0.0, [0.8, 0.2]; offset=0.1, tol=1e-8)
 ```
 """
-function fixed_point(
-  f,
-  state,
-  param,
-  args...;
-  tol::Float64=1e-6,
-  max_iters::Int=1000,
-  norm_type::Real=2,
-  verbose::Bool=false,
-  kwargs...
+function fixed_point(f, state, param, args...;
+  tol::Float64=1e-6, nmax::Int=1000, norm_type::Real=2,
+  verbose::Bool=false, kw...
 )
   # 分离固定点求解的配置参数和传递给 f 的关键字参数
-  f_kwargs = filter(kw -> kw.first ∉ [:tol, :max_iters, :norm_type, :verbose], pairs(kwargs))
-
   state_prev = copy(state)
-  state_curr = f(state, param, args...; f_kwargs...)
+  state_curr = f(state, param, args...; kw...)
 
-  for iter in 1:max_iters
+  for iter in 1:nmax
     residual = norm(state_curr - state_prev, norm_type)
-    
+
     # verbose && println("Iter $iter: residual = $residual")
     if residual < tol
       verbose && println("Converged in $iter iterations")
@@ -68,11 +59,11 @@ function fixed_point(
     end
 
     state_prev = copy(state_curr)
-    state_curr = f(state_curr, param, args...; f_kwargs...)
+    state_curr = f(state_curr, param, args...; kw...)
   end
 
-  error = norm(state_curr - state_prev, norm_type)
-  @warn "Fixed point did not converge in $max_iters iterations. Final residual: $error"
+  ϵ = norm(state_curr - state_prev, norm_type)
+  @warn "Fixed point did not converge in $nmax iterations. Final residual: $ϵ"
   return state_curr
 end
 

@@ -18,14 +18,15 @@ function EnzymeRules.augmented_primal(
   f::Const,
   state::Union{Active, Duplicated},
   param::Duplicated,
-  args::Const...
+  args::Const...; 
+  kw...
 ) where {RT<:Union{Active, Duplicated}}
   println("使用自定义反向模式规则 (augmented primal)")
 
   # 1. 前向传播：计算固定点（使用默认参数）
   # 处理不同类型的 state
   state_val = state isa Active ? state.val : state.val
-  state_star = fixed_point(f.val, state_val, param.val, map(a -> a.val, args)...)
+  state_star = fixed_point(f.val, state_val, param.val, map(a -> a.val, args)...; kw...)
 
   # 处理标量情况
   state_is_scalar = !(state_star isa AbstractArray)
