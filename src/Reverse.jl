@@ -121,7 +121,8 @@ function EnzymeRules.reverse(
   f::Const,
   state::Union{Active, Duplicated},
   param::Duplicated,
-  args::Const...
+  args::Const...; 
+  kw...
 )
 
   println("使用自定义反向模式规则 (reverse pass)")
