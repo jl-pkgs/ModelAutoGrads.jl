@@ -47,6 +47,12 @@ function fixed_point(f, state, param, args...;
 )
   # 分离固定点求解的配置参数和传递给 f 的关键字参数
   state_prev = copy(state)
+  @show f
+  @show state
+  @show param
+  r = f(state, param, args...; kw...)
+  @show r
+
   state_curr = f(state, param, args...; kw...)
 
   for iter in 1:nmax
@@ -68,11 +74,16 @@ function fixed_point(f, state, param, args...;
 end
 
 
+function fixed_point!(state_curr, f, state, param, args...; kw...)
+  state_curr .= fixed_point(f, state, param, args; kw...) # 修改地址的返回
+  return nothing
+end
+
+
 ## 这是不使用自定义的梯度的函数作为对照组
 function _fixed_point(f, state, param, args...;
-  tol::Float64=1e-6, nmax::Int=1000, norm_type::Real=2,
-  verbose::Bool=false, kw...
-)
+  tol::Float64=1e-6, nmax::Int=1000, norm_type::Real=2, kw...)
+
   state_prev = copy(state)
   state_curr = f(state, param, args...; kw...)
 
@@ -88,4 +99,6 @@ function _fixed_point(f, state, param, args...;
   return state_curr
 end
 
-export fixed_point, _fixed_point
+
+export fixed_point, fixed_point!
+export _fixed_point # 对照组

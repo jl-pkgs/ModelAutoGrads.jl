@@ -1,173 +1,103 @@
-"""
-反向模式隐式微分 (VJP)
+using Enzyme
+import Enzyme.EnzymeRules: augmented_primal, reverse
+using .EnzymeRules
+using LinearAlgebra
 
-数学原理:
-F(state, param) = state - f(state, param, args...) = 0
-隐式函数定理的伴随方程:
-(I - J_state)ᵀ · λ = dL/dstate*
-梯度计算:
-dL/dparam = λᵀ · J_param
-
-反向模式分两步:
-1. augmented_primal: 前向传播 + 保存 J_state 到 tape
-2. reverse: 求解伴随方程 + 计算参数梯度
-"""
-
-"""
-Augmented primal: 前向传播 + 保存反向传播需要的数据
-"""
-function EnzymeRules.augmented_primal(
-  config::RevConfigWidth{1},
-  func::Const{typeof(fixed_point)},
-  ::Type{RT},
-  f::Const,
-  state::Const{<:AbstractArray},
-  param::Duplicated,
-  args::Const...;
-  kw...
-) where {RT<:Union{Active, Duplicated}}
-
-  printstyled("使用自定义反向模式规则 (augmented primal)\n", color=:blue, bold=true)
-
-  # 1. 计算固定点 state*
-  state_star = fixed_point(f.val, state.val, param.val,
-                          map(a -> a.val, args)...; kw...)
-  n = length(state_star)
-  args_const = map(a -> Const(a.val), args)
-
-  # 2. 计算并保存 J_state = ∂f/∂state|(state*, param)
-  J_state = zeros(n, n)
+# 辅助函数：计算 Jacobian ∂f/∂state
+function compute_jacobian_state(f, state, param, args...)
+  n = length(state)
+  J = zeros(n, n)
 
   for i in 1:n
-    dstate = make_zero(state_star)
+    dstate = make_zero(state)
     dstate[i] = 1.0
 
-    result_val = make_zero(state_star)
-    result_dval = make_zero(state_star)
+    state_dup = Duplicated(copy(state), dstate)
+    result = Duplicated(similar(state), make_zero(state))
 
-    autodiff(
-      ForwardWithPrimal,
-      (out, s, p, a...) -> (out .= f.val(s, p, a...); nothing),
-      Const,
-      Duplicated(result_val, result_dval),
-      Duplicated(copy(state_star), dstate),
-      Const(param.val),
-      args_const...
-    )
-    J_state[:, i] = result_dval[:]
+    # 前向模式计算 Jacobian 的第 i 列
+    autodiff(Forward, f, result, state_dup, Const(param), map(Const, args)...)
+    J[:, i] = result.dval[:]
   end
 
-  # 3. 保存数据到 tape
-  tape = (
-    state_star = state_star,
-    J_state = J_state,
-    param_val = param.val,
-    args_vals = map(a -> a.val, args),
-    f_func = f.val
-  )
-
-  # 4. 返回
-  # primal: 如果 needs_primal(config)=true 则返回 state_star，否则 nothing
-  # shadow: 如果 needs_shadow(config)=true 则返回 zero，否则 nothing
-  primal_return = EnzymeRules.needs_primal(config) ? state_star : nothing
-  shadow_return = EnzymeRules.needs_shadow(config) ? make_zero(state_star) : nothing
-
-  return Enzyme.EnzymeRules.AugmentedReturn(
-    primal_return,
-    shadow_return,
-    tape
-  )
+  return J
 end
 
-"""
-Reverse pass: 反向传播梯度
-
-数学步骤:
-1. 求解伴随方程: (I - J_state)ᵀ · λ = dL/dstate*
-2. 计算参数梯度: dL/dparam = λᵀ · J_param (使用 VJP)
-
-关键修正:
-- reverse 函数不应该直接修改 param.dval
-- 应该返回梯度值，Enzyme 会自动累加
-"""
-function EnzymeRules.reverse(
+# augmented_primal
+function augmented_primal(
   config::RevConfigWidth{1},
-  func::Const{typeof(fixed_point)},
-  dret,
-  tape,
+  func::Const{typeof(fixed_point!)},
+  ::Type{Const{Nothing}},
+  state_curr::Duplicated,
   f::Const,
-  state::Const{<:AbstractArray},
+  state::Duplicated,
   param::Duplicated,
-  args::Const...;
+  args...;
   kw...
 )
+  println("In custom augmented_primal for fixed_point!")
 
-  println("使用自定义反向模式规则 (reverse pass)")
+  # 执行前向计算
+  func.val(state_curr.val, f.val, state.val, param.val, args...; kw...)
 
-  # 1. 从 tape 恢复数据
-  state_star = tape.state_star
-  J_state = tape.J_state
-  param_val = tape.param_val
-  args_vals = tape.args_vals
-  f_func = tape.f_func
+  # 保存固定点和必要信息
+  state_star = copy(state_curr.val)
 
-  n = length(state_star)
+  tape = (state_star, f.val, param.val, args)
 
-  # 2. 获取上游梯度 dL/dstate*
-  # dret 可能是:
-  # - Active: dret.val 是标量
-  # - Duplicated: dret.dval 是数组
-  # - 直接的数值
-  dL_dstate_star = if dret isa Active
-    fill(dret.val, n)  # 标量广播
-  elseif dret isa Duplicated
-    copy(dret.dval[:])
-  elseif dret isa AbstractArray
-    copy(dret[:])
-  else
-    fill(dret, n)
-  end
+  return AugmentedReturn(nothing, nothing, tape)
+end
 
-  # 3. 求解伴随方程: (I - J_state)ᵀ · λ = dL/dstate*
-  A_T = (I - J_state)'
-  lambda = A_T \ dL_dstate_star
+# reverse：使用隐式函数定理
+function reverse(
+  config::RevConfigWidth{1},
+  func::Const{typeof(fixed_point!)},
+  ::Type{Const{Nothing}},
+  tape,
+  state_curr::Duplicated,
+  f::Const,
+  state::Duplicated,
+  param::Duplicated,
+  args...
+)
+  println("In custom reverse for fixed_point!")
 
-  # 4. 计算 dL/dparam = λᵀ · J_param (使用反向模式 VJP)
-  args_const = map(Const, args_vals)
+  state_star, f_saved, param_saved, saved_args = tape
 
-  # 准备输出的梯度（这是 lambda，即伴随变量）
-  output_grad = reshape(lambda, size(state_star))
+  # 获取输出的 adjoint
+  v = state_curr.dval[:]
 
-  # 使用反向模式计算 VJP: λᵀ · J_param
-  result_val = make_zero(state_star)
-  result_grad = copy(output_grad)
+  # 隐式函数定理：
+  # 固定点条件: state* = f(state*, param)
+  # 解线性系统: (I - J_state)^T * λ = v
+  # 其中 J_state = ∂f/∂state 在固定点处
 
-  # 关键: 用 zero 初始化，让 Enzyme 自动累加
-  param_grad_storage = make_zero(param_val)
+  # 计算 Jacobian
+  J_state = compute_jacobian_state(f_saved, state_star, param_saved, saved_args...)
 
-  autodiff(
-    Reverse,
-    (out, s, p, a...) -> (out .= f_func(s, p, a...); nothing),
-    Const,
-    Duplicated(result_val, result_grad),
-    Const(state_star),
-    Duplicated(copy(param_val), param_grad_storage),
-    args_const...
-  )
+  # 解线性系统: (I - J_state^T) * λ = v
+  A = I - J_state'
+  λ = A \ v
+  λ = reshape(λ, size(state_star))
 
-  # 5. 返回梯度
-  # 返回值顺序必须与参数顺序一致:
-  # (f, state, param, args...)
-  #
-  # - f 是 Const，返回 nothing
-  # - state 是 Const，返回 nothing  
-  # - param 是 Duplicated，返回计算出的梯度
-  # - args 都是 Const，返回 nothing
-  
-  return (
-    nothing,              # f::Const 的梯度
-    nothing,              # state::Const 的梯度
-    param_grad_storage,   # param::Duplicated 的梯度
-    map(_ -> nothing, args)...  # args::Const... 的梯度
-  )
+
+  # 计算 ∂L/∂param = λ^T * ∂f/∂param
+  # 使用反向模式计算
+  state_const = Const(state_star)
+  param_dup = Duplicated(param_saved, make_zero(param_saved))
+
+  result_dup = Duplicated(similar(state_star), λ)
+
+  println("k1")
+  autodiff(Reverse, f_saved, result_dup, state_const, param_dup, map(Const, saved_args)...)
+
+  println("k2")
+
+  # 累加梯度到 param
+  param.dval .+= param_dup.dval
+
+  # 清零输出梯度
+  make_zero!(state_curr.dval)
+
+  return (nothing, nothing, nothing, nothing)
 end

@@ -7,14 +7,8 @@ using ComponentArrays
 function f(state, params)
   A, b = params
   R = A * tanh.(state) .+ b
-  state[1] = R[1] ## 迭代过程中state被修改
+  # state[1] = R[1] ## 迭代过程中state被修改
   return R
-end
-
-
-function loss(params)
-  x_star = fixed_point_wrapper(f, x_init, params)
-  return abs(sum(x_star))
 end
 
 begin
@@ -24,9 +18,10 @@ begin
   params = (; A, b)
 
   state_init = ones(Float64, 2, 2)
+  state_star = deepcopy(state_init)
 
   # 计算固定点
-  state_star = fixed_point(f, state_init, params)
+  fixed_point!(state_star, f, state_init, params)
   display(state_star)
 end
 
