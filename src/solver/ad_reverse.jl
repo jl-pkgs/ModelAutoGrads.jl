@@ -30,7 +30,7 @@ end
 
 
 function EnzymeRules.augmented_primal(
-  config::RevConfigWidth{1},
+  config::RevConfig,
   func::Const{typeof(fixed_point!)},
   ::Type{Const{Nothing}},
   state_curr::Duplicated,
@@ -54,7 +54,7 @@ end
 
 # reverse：使用隐式函数定理
 function EnzymeRules.reverse(
-  config::RevConfigWidth{1},
+  config::RevConfig,
   func::Const{typeof(fixed_point!)},
   ::Type{Const{Nothing}},
   tape,

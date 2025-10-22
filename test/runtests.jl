@@ -17,6 +17,8 @@ end
 
 
 
+include("test-reverse_hard.jl")
+
 include("test-buildin_solver.jl")
 include("test-gradient.jl")
 include("test-gradient_small.jl")
