@@ -17,10 +17,10 @@ import Enzyme.EnzymeRules: augmented_primal, reverse, forward
 using LinearAlgebra
 
 
-include("fixed_point.jl")
-
-include("Forward.jl")
-include("Reverse.jl")
+include("solver/fixed_point.jl")
+include("solver/ad_forward.jl")
+include("solver/ad_reverse.jl")
+include("solver/gradient.jl")
 
 include("gradient.jl")
 

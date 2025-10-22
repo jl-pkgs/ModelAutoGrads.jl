@@ -17,8 +17,9 @@ end
 
 
 
-include("test-forward.jl")
-include("test-reverse.jl")
+include("test-buildin_solver.jl")
+include("test-gradient.jl")
+include("test-gradient_small.jl")
 
 
 @testset "fixed_point" begin
