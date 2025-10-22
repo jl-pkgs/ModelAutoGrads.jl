@@ -15,11 +15,14 @@ import Enzyme.EnzymeRules
 import Enzyme.EnzymeRules: augmented_primal, reverse, forward
 
 using LinearAlgebra
-# greet() = print("Hello World!")
+
 
 include("fixed_point.jl")
+
 include("Forward.jl")
 include("Reverse.jl")
+
+include("gradient.jl")
 
 
 end # module ModelAutoGrad

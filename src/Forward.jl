@@ -38,7 +38,7 @@ dstate* = (I - J_state)⁻¹ · (J_param · dparam)
 function EnzymeRules.forward(
   config::FwdConfig,
   func::Const{typeof(fixed_point)},
-  RT::Type,
+  RT::Type, # TODO: 有改进空间，根据RT调整返回值类型
   f::Const,
   state::Const{<:AbstractArray}, # 上一时刻的状态变量
   param::Duplicated,

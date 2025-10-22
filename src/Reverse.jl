@@ -1,9 +1,3 @@
-using Enzyme
-import Enzyme.EnzymeRules
-import Enzyme.EnzymeRules: augmented_primal, reverse
-using LinearAlgebra
-
-
 """
     fixed_point!(state_curr, f!, state, param, args...; kw...)
 
@@ -32,6 +26,7 @@ function fixed_point!(
   @warn "Fixed point did not converge in $nmax iterations. Final residual: $ϵ"
   return nothing
 end
+
 
 
 function EnzymeRules.augmented_primal(
