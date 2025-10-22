@@ -1,8 +1,8 @@
 using ModelAutoGrad, Enzyme, Test
 using ComponentArrays
-include("main_func.jl")
+# include("main_func.jl")
 
-grad_f = gradient_forward(f, state_init, params)
+# grad_f = gradient_forward(f, state_init, params)
 
 function gradient_reverse_fixed(f!, state_init, params; solver=fixed_point!)
   m = length(state_init)
@@ -31,7 +31,23 @@ function gradient_reverse_fixed(f!, state_init, params; solver=fixed_point!)
 end
 
 
+# function f!(state_next, state, params, args...; kw...)
+#   # A, b = params.A, params.b
+#   (; A, b) = params
+#   R = A * tanh.(state) .+ b # 创建一个临时变量
+#   copyto!(state_next, R)
+#   return nothing
+# end
+
+
 @testset "[fixed_point] gradient_reverse" begin
+  # 使用不同的初始状态来区分各元素的贡献
+  A = [0.7 0.2; 0.1 0.6]
+  b = [0.1 0.7; 0.5 0.4]
+  params = ComponentArray(; A, b)
+
+  state_init = [1.0 2.0; 3.0 4.0]  # 不同的值
+
   @time J_custom = gradient_reverse_fixed(f!, state_init, params; solver=fixed_point!)
   @time J = gradient_reverse_fixed(f!, state_init, params; solver=_fixed_point!) # 对照组
 

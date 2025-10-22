@@ -45,7 +45,8 @@ function EnzymeRules.augmented_primal(
   args...;
   kw...
 )
-  println("In custom augmented_primal for fixed_point!")
+  printstyled("[fixed_point!] custom `augmented_primal` \n", color=:blue, bold=true)
+  
   func.val(state_curr.val, f!.val, state.val, param.val, args...; kw...) # 执行前向计算
 
   # 保存固定点和必要信息
@@ -68,7 +69,8 @@ function EnzymeRules.reverse(
   param::Duplicated,
   args...; kw_unused...
 )
-  println("In custom reverse for fixed_point!")
+  printstyled("[fixed_point!] custom `reverse` \n", color=:blue, bold=true)
+  # println("In custom reverse for fixed_point!")
 
   state_star, f_saved!, param_saved, saved_args, kw = tape
 

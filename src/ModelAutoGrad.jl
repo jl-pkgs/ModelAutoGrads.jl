@@ -2,7 +2,7 @@ module ModelAutoGrad
 
 
 export norm
-export reverse, forward
+export reverse, forward, augmented_primal
 
 export fixed_point, fixed_point!
 export _fixed_point, _fixed_point!
