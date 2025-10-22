@@ -1,24 +1,10 @@
-using ModelAutoGrad
-using Enzyme, Test
+using ModelAutoGrad, Enzyme, Test
 using ComponentArrays
+include("main_func.jl")
 
+grad_f = gradient_forward(f, state_init, params)
 
-begin
-  # 参数
-  d_param = make_zero(params)
-  d_param.A[1] = 1.0
-  d_param.b[1] = 1.0
-
-  grads, zval = Enzyme.autodiff(
-    ForwardWithPrimal, fixed_point,
-    Const(f),
-    Const(state_init),
-    Duplicated(params, d_param)
-  )
-end
-
-
-begin
+function gradient_forward_fixed(f, state_init, params; solver=fixed_point!)
   n = length(params)
   m = length(state_init)
 
@@ -27,20 +13,20 @@ begin
     d_param = make_zero(params)
     d_param[i] = 1.0
 
-    grads, zval = Enzyme.autodiff(
-      ForwardWithPrimal, fixed_point,
+    grads = Enzyme.autodiff(
+      Forward, solver,
       Const(f),
       Const(state_init),
       Duplicated(params, d_param)
-    )
-    # @show grads
+    )[1]
     J[:, i] = grads[:]
   end
   J
 end
 
+@time J_custom = gradient_forward_fixed(f, state_init, params; solver=fixed_point)
 
-
+@time J = gradient_forward_fixed(f, state_init, params; solver=_fixed_point)
 
 
 
@@ -53,8 +39,8 @@ end
 
   ## 如何更新梯度
   d_param = make_zero(params)
-  d_param[1][1] = 1.0
-  d_param[2][1] = 1.0
+  d_param.A[1] = 1.0
+  d_param.b[1] = 1.0
 
   res = map(solver -> begin
       result = Enzyme.autodiff(

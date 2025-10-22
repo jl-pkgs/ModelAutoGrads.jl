@@ -40,7 +40,7 @@ function EnzymeRules.augmented_primal(
   ::Type{Const{Nothing}},
   state_curr::Duplicated,
   f!::Const,
-  state::Duplicated,
+  state::Annotation,
   param::Duplicated,
   args...;
   kw...
@@ -64,7 +64,7 @@ function EnzymeRules.reverse(
   tape,
   output::Duplicated, # 存储的结果
   f!::Const,
-  state::Duplicated,
+  state::Annotation,
   param::Duplicated,
   args...; kw_unused...
 )
@@ -90,15 +90,14 @@ function EnzymeRules.reverse(
 
     # 是否还需要自定义一个forward f_saved!，因为它不会自动填充
     autodiff(Forward, f_saved!,
-      Duplicated(make_zero(state_star), d_st),   # forward 自动填充
-      Duplicated(copy(state_star), dstate),
-      Const(param.val),
-      map(Const, saved_args)...; kw...
+      Const, # !important, return nothing 
+      Duplicated(make_zero(state_star), d_st),  # 输出, state_next
+      Duplicated(copy(state_star), dstate),               # 输入, state
+      Const(param_saved),
+      map(Const, saved_args)...
     )
     J_state[:, i] = d_st[:]
   end
-
-  display(J_state)
 
   # 解线性系统: (I - J_state^T) * λ = v
   A = I - J_state' # 1 - ∂F/∂x

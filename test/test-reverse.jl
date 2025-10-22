@@ -1,53 +1,39 @@
-using ModelAutoGrad
-using Enzyme, Test
+using ModelAutoGrad, Enzyme, Test
+using ComponentArrays
+include("main_func.jl")
 
-include("main_funcs.jl")
+grad_f = gradient_forward(f, state_init, params)
 
-begin
-  d_param = make_zero(params)
-  d_param.A[1] = 1.0
-
-  grads, zval = Enzyme.autodiff(
-    ForwardWithPrimal, fixed_point,
-    Const(f),
-    Const(state_init),
-    Duplicated(params, d_param)
-  )
-  grads
-end
-
-
-# gradient
-function cal_gradient()
-  m = length(state_star)
+function gradient_reverse_fixed(f!, state_init, params; solver = fixed_point!)
+  m = length(state_init)
   n = length(params)
   J = zeros(m, n) # m, n
 
-  res = copy(state_init)
-
   for i in 1:m
-    res_dval = make_zero(state_star)
-    res_dval[i] = 1.0
+    d_res = make_zero(state_init)
+    d_res[i] = 1.0
 
     d_param = make_zero(params)
     d_st = make_zero(state_init)
 
-    result = Enzyme.autodiff(
+    Enzyme.autodiff(
       Reverse,
-      fixed_point!,
+      solver,
       Const,
-      Duplicated(res, res_dval), # 返回值
+      Duplicated(make_zero(state_init), d_res), # 输入
       Const(f!),
-      # Const(state_init),
-      Duplicated(state_init, d_st),
-      Duplicated(params, d_param)
+      Const(state_init),
+      Duplicated(params, d_param)               # 输出
     )
-    
     J[i, :] = d_param[:]
   end
   J
 end
 
-cal_gradient()
 
-# fixed_point!(res, f!, state_init, params)
+# using BenchmarkTools
+# custom
+@time J_custom = gradient_reverse_fixed(f!, state_init, params; solver=fixed_point!)
+
+# 对照组
+@time J_corr = gradient_reverse_fixed(f!, state_init, params; solver=_fixed_point!)
