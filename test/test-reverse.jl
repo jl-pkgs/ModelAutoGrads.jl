@@ -4,7 +4,7 @@ include("main_func.jl")
 
 grad_f = gradient_forward(f, state_init, params)
 
-function gradient_reverse_fixed(f!, state_init, params; solver = fixed_point!)
+function gradient_reverse_fixed(f!, state_init, params; solver=fixed_point!)
   m = length(state_init)
   n = length(params)
   J = zeros(m, n) # m, n
@@ -31,9 +31,9 @@ function gradient_reverse_fixed(f!, state_init, params; solver = fixed_point!)
 end
 
 
-# using BenchmarkTools
-# custom
-@time J_custom = gradient_reverse_fixed(f!, state_init, params; solver=fixed_point!)
+@testset "[fixed_point] gradient_reverse" begin
+  @time J_custom = gradient_reverse_fixed(f!, state_init, params; solver=fixed_point!)
+  @time J = gradient_reverse_fixed(f!, state_init, params; solver=_fixed_point!) # 对照组
 
-# 对照组
-@time J_corr = gradient_reverse_fixed(f!, state_init, params; solver=_fixed_point!)
+  @test maximum(abs.(J_custom - J)) <= 0.5 * 1e-4
+end

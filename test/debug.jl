@@ -1,28 +1,20 @@
-using Enzyme
+using ModelAutoGrad, Enzyme, Test
 using ComponentArrays
-using LinearAlgebra
+# include("main_func.jl")
 
-
-Enzyme.API.runtimeActivity!(true)
-
-function f!(state_next, state, params)
+function f(state, params, args...; kw...)
   # A, b = params.A, params.b
   (; A, b) = params
-  R = A * tanh.(state) .+ b # 为何不能点赋值
+  return A * tanh.(state) .+ b
+end
+
+function f!(state_next, state, params, args...; kw...)
+  # A, b = params.A, params.b
+  (; A, b) = params
+  R = A * tanh.(state) .+ b # 创建一个临时变量
   copyto!(state_next, R)
   return nothing
 end
-
-# function f!(state_next, state, params)
-#   (; A, b) = params
-#   # 关键：避免使用广播 .= 和 .+，改用循环
-#   temp = tanh.(state)
-#   mul!(state_next, A, temp)
-#   @inbounds for i in eachindex(state_next)
-#     state_next[i] += b[i]
-#   end
-#   return nothing
-# end
 
 
 begin
@@ -32,26 +24,22 @@ begin
   params = ComponentArray(; A, b)
 
   state_init = [1.0 2.0; 3.0 4.0]  # 不同的值
-  state_star = zeros(Float64, 2, 2)
+  state_star = make_zero(state_init)
 
   m = length(state_init)
   n = length(params)
 end
 
+
 begin
-  res = make_zero(state_init)
-  d_res = make_zero(state_init)
+  i = 1
+  d_param = make_zero(params)
+  d_param[i] = 1.0
 
-  d_state = make_zero(state_init)
-  d_state[1] = 1.0
-
-  autodiff(Forward, f!,
-    Const,
-    Duplicated(res, d_res),
-    Duplicated(state_init, d_state),
-    Const(params)
+  grads = Enzyme.autodiff(
+    ForwardWithPrimal, fixed_point,
+    Const(f),
+    Const(state_init),
+    Duplicated(params, d_param)
   )
-
-  println("res = ", res)
-  println("d_res = ", d_res)
 end

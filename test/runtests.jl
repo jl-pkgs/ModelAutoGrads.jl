@@ -1,9 +1,11 @@
 using ModelAutoGrad, Test
 using Enzyme
 
+include("test-forward.jl")
+include("test-reverse.jl")
+
 # include("test-vector.jl")
 # include("test-reverse.jl")
-
 # include("test_scalar.jl")
 # include("test_args.jl")
 # include("test_vector.jl")

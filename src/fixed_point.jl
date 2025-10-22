@@ -1,6 +1,5 @@
 ## 对照组
 # https://enzyme.mit.edu/julia/dev/api/
-export _fixed_point, _fixed_point!
 
 
 function _fixed_point!(
