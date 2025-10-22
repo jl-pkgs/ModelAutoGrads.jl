@@ -41,46 +41,6 @@ f(x, params; offset=0.0) = params[1] * tanh(x) + params[2] + offset
 x_star = fixed_point(f, 0.0, [0.8, 0.2]; offset=0.1, tol=1e-8)
 ```
 """
-function fixed_point(f, state, param, args...;
-  tol::Float64=1e-6, nmax::Int=1000, norm_type::Real=2,
-  verbose::Bool=false, kw...
-)
-  # 分离固定点求解的配置参数和传递给 f 的关键字参数
-  state_prev = copy(state)
-  @show f
-  @show state
-  @show param
-  r = f(state, param, args...; kw...)
-  @show r
-
-  state_curr = f(state, param, args...; kw...)
-
-  for iter in 1:nmax
-    residual = norm(state_curr - state_prev, norm_type)
-
-    # verbose && println("Iter $iter: residual = $residual")
-    if residual < tol
-      verbose && println("Converged in $iter iterations")
-      return state_curr
-    end
-
-    state_prev = copy(state_curr)
-    state_curr = f(state_curr, param, args...; kw...)
-  end
-
-  ϵ = norm(state_curr - state_prev, norm_type)
-  @warn "Fixed point did not converge in $nmax iterations. Final residual: $ϵ"
-  return state_curr
-end
-
-
-function fixed_point!(state_curr, f, state, param, args...; kw...)
-  state_curr .= fixed_point(f, state, param, args; kw...) # 修改地址的返回
-  return nothing
-end
-
-
-## 这是不使用自定义的梯度的函数作为对照组
 function _fixed_point(f, state, param, args...;
   tol::Float64=1e-6, nmax::Int=1000, norm_type::Real=2, kw...)
 

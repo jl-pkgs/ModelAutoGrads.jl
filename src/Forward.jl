@@ -1,3 +1,30 @@
+function fixed_point(f, state, param, args...;
+  tol::Float64=1e-6, nmax::Int=1000, norm_type::Real=2,
+  verbose::Bool=false, kw...
+)
+  # 分离固定点求解的配置参数和传递给 f 的关键字参数
+  state_prev = copy(state)
+  state_curr = f(state, param, args...; kw...)
+
+  for iter in 1:nmax
+    residual = norm(state_curr - state_prev, norm_type)
+
+    # verbose && println("Iter $iter: residual = $residual")
+    if residual < tol
+      verbose && println("Converged in $iter iterations")
+      return state_curr
+    end
+
+    state_prev = copy(state_curr)
+    state_curr = f(state_curr, param, args...; kw...)
+  end
+
+  ϵ = norm(state_curr - state_prev, norm_type)
+  @warn "Fixed point did not converge in $nmax iterations. Final residual: $ϵ"
+  return state_curr
+end
+
+
 """
 前向模式隐式微分 (JVP)
 
